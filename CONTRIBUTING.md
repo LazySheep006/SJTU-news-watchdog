@@ -1,43 +1,59 @@
-## 大家注意，每次开发新功能的时候记得
-```bash
-git checkout dev #如果你本地有dev分支（如果没有就是checkout -b)
-git pull origin dev
+# Contributing to SJTU News Watchdog
 
-git checkout feature/** #同样和上面的考虑-b，
+欢迎参与本项目的开发！为了保证代码质量和自动化流程的稳定运行，请遵循以下开发规范。
 
-git merge dev #这个merge是发生在本地的
-```
-### 之后才能继续（原因是git是看分支之间有没有关系，这样能始终保持你的feature分支和远程dev是父子关系的，到时候才能merge到远程）
+## 分支管理 (Branch Strategy)
 
-## 总体想法
-- 现在爬虫部分已经写的大差不差了
-- 然后我们先解决的是数据库的问题，请**shaoli**看一下
-    - 思路就是之后上线会有，我们现在假定我们的爬虫每天会定时运行，然后每天都会得到新的json（当然也可能是旧的
-    - 你需要做的就是去看看json的格式，去对应sqlite3的表的生成和编写。然后如果有不同的url，**请返回到** `today.json`**代表今天有更新**，并且把新的内容存到sqlite里面去
-- 然后user的问题
-    - 我们到时候会维护一个数据库（由于涉及隐私我的想法是用我之前那个云端的数据库，而不是github来存），现在可以假定就是一个json文件
-    ```json
-    {   
-        ···
-        "user_id":01,
-        "user_email":"example@xx.com",
-        "user_school":"计算机学院"
-        ···
-    }
+我们采用 **Feature Branch Workflow**：
 
+1.  **`main`**: 主分支，对应线上稳定版本。GitHub Actions 会每天定时运行此分支的代码。
+2.  **`dev` / `feature-*`**: 开发分支。
+
+**开发流程**：
+1.  从 `main` 切出一个新分支：`git checkout -b feature/new-spider`
+2.  在本地开发并测试。
+3.  提交代码并推送到远程仓库。
+4.  在 GitHub 上发起 **Pull Request (PR)** 合并到 `main`。
+5.  等待 Code Review 或自动检查通过后合并。
+
+## 如何添加新的爬虫源
+
+如果你想添加一个新的学院通知来源，请按以下步骤操作：
+
+1.  **新建文件**：在 `SPIDER/` 目录下新建 `xxx_spider.py`。
+2.  **实现函数**：必须包含一个返回列表的函数，数据结构如下：
+    ```python
+    [
+      {
+        "title": "通知标题",
+        "url": "通知链接",
+        "date": "2024-01-01",
+        "source": "学院名称(作为分类依据)",
+        "content": "原始内容(用于AI总结)"
+      },
+      ...
+    ]
     ```
-    - 到时候就是根据刚刚那个`today.json`来找一下对应需要发送的邮件
-- 最后才是邮件部分，这个到时候再考虑
+3.  **注册爬虫**：在根目录的 `spider.py` 中导入你的模块，并在 `run_all_spiders()` 函数中调用它，将结果添加到 `all_data_categorized` 字典中。
 
-### 有关ai_prompt编写的注意点
-- 首先请注意看在根目录下的json，观察他的格式
-- 我目前的想法是json可以类比每天送货的卡车，之后是要灌进**shaoli**写的sqlite3的数据库的，但是送进去之前，先过一下ai，让ai把content总结一下
-- 有关电气工程学院的
-    - 可以看到由于电气那边有的要登录jaccount，所以爬取不下来（甚至登录我的检测到我不是电气的都提示没有权限）
-    - 所以我在里面写了一个 `type`变量，当他是0的时候代表需要权限（这里就需要**ningkai**去看看怎么编写prompt了）
-- 有关教务处
-    - 可以看到就是有的通知里面有图片，我是直接爬取下来图片的链接的（需要编写安全prompt以确保这个链接还会再次被输出）
-- 有关总体
-    - 目前是面向本科生，但是以后也许可以面向研究生，请**ningkai**注意编写，因为官网很多通知也许是研究生的，我们现在只局限于本科生，所以prompt for example可以写成（我乱写的，你可以想想更好的？）
-    
-    > 我是一个本科生，如果这则通知是面向研究生的，请返回<not_for_undergraduate>
+## 数据库变更
+
+本项目使用了 Supabase 的 RPC 函数来绕过 RLS 限制。如果你修改了数据表结构（`users` 表），请务必：
+
+1.  同步更新 `db_ai.py` 中的数据库操作代码。
+2.  如果是前端相关变更，需要在 Supabase SQL Editor 中更新对应的 `manage_subscription` 或 `get_subscriber_count` 函数。
+3.  在 PR 中说明 SQL 变更内容。
+
+## 提交前的检查清单
+
+在提交 PR 之前，请在本地运行一次完整流程，确保没有报错：
+
+```bash
+# 1. 确保安装了依赖
+pip install -r requirements.txt
+
+# 2. 运行总流程
+python main.py
+```
+
+# *Happy Coding!* 🚀
