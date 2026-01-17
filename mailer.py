@@ -10,13 +10,10 @@ SMTP_SERVER = "smtp.163.com"  # 如果是163，填 smtp.163.com
 SMTP_PORT = 465              # SSL加密端口通常是 465
 SENDER_EMAIL = "lazysheep0066@163.com"
 PASSWORD = os.environ.get("EMAIL_PASSWORD")
-# ===========================================
 
-# ================= Supabase 配置 =================
 SUPABASE_URL = os.environ.get("SUPABASE_URL")
 SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
-# ===========================================
 
 def send_daily_report(receiver_email, user_name, user_subs, json_data):
     """
