@@ -112,7 +112,7 @@ def send_all_subscribed_emails():
         with open('data/new_updates.json', 'r', encoding='utf-8') as f:
             full_data = json.load(f)
     except FileNotFoundError:
-        print("❌ 找不到 new_updates.json 文件")
+        print("找不到 new_updates.json 文件")
         return
 
     # 从 Supabase 获取所有活跃用户
@@ -122,19 +122,19 @@ def send_all_subscribed_emails():
             .eq("is_active", True).execute()
         users = response.data
     except Exception as e:
-        print(f"❌ Supabase 读取失败: {e}")
+        print(f"Supabase 读取失败: {e}")
         return
 
     if not users:
-        print("ℹ️ 没有活跃用户需要发送邮件。")
+        print("没有活跃用户需要发送邮件。")
         return
 
-    print(f"🚀 开始为 {len(users)} 个用户处理订阅邮件...")
+    print(f"开始为 {len(users)} 个用户处理订阅邮件...")
 
     # 循环遍历每个用户，发送个性化日报
     for user in users:
         email = user.get('email')
-        name = user.get('name', '同学')
+        name = user.get('name', ' 同学')
         subs = user.get('subscriptions', []) # 这是一个列表，如 ["计算机学院"]
 
         # 调用你写的那个函数
@@ -150,6 +150,5 @@ def send_all_subscribed_emails():
             # supabase.table("users").update({"last_sent": "now()"}).eq("email", email).execute()
             pass
 
-# ================= 运行 =================
 if __name__ == "__main__":
     send_all_subscribed_emails()
