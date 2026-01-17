@@ -1,5 +1,4 @@
 name: Daily SJTU News Watchdog
-
 on:
   schedule:
     - cron: '0 0 * * *' # 每天 UTC 0点 (北京时间 8点)
