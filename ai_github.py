@@ -1,13 +1,22 @@
 import json
 import time
 import os
-from openai import OpenAI
+from azure.ai.inference import ChatCompletionsClient
+from azure.ai.inference.models import SystemMessage, UserMessage
+from azure.core.credentials import AzureKeyCredential
 
-API_KEY = os.environ.get("SJTU_news")
-BASE_URL = "https://api.deepseek.com"
-MODEL_NAME = "deepseek-chat" # DeepSeek V3 模型
+GITHUB_TOKEN = os.environ["SJTU_new"]
 
-client = OpenAI(api_key=API_KEY, base_url=BASE_URL)
+ENDPOINT = "https://models.github.ai/inference"
+
+MODEL_NAME = "openai/gpt-4.1-mini"
+
+# MODEL_NAME = "deepseek/DeepSeek-V3-0324" #这个有速率限制 很慢，但是效果好
+
+client = ChatCompletionsClient(
+    endpoint=ENDPOINT,
+    credential=AzureKeyCredential(GITHUB_TOKEN),
+)
 
 INPUT_FILE = "data/today.json"
 OUTPUT_FILE = "data/today_ai_summary.json"
@@ -44,42 +53,32 @@ def build_messages(title, content):
     user_text = f"【标题】：{title}\n【正文】：\n{content}"
 
     return [
-        {"role": "system", "content": system_text},
-        {"role": "user", "content": user_text},
+        SystemMessage(content=system_text),
+        UserMessage(content=user_text),
     ]
 
 def get_ai_summary(title, content):
     if len(content) < 50 and "图片" not in content:
         return content 
     
-    if not API_KEY:
-        print("错误: 未找到 SJTU-news")
-        return None
-
     try:
-        messages_list = build_messages(title, content)
+        messages_objects = build_messages(title, content)
 
-        response = client.chat.completions.create(
-            model=MODEL_NAME,
-            messages=messages_list,
+        response = client.complete(
+            messages=messages_objects,
             temperature=0.3, 
             top_p=1.0,
             max_tokens=1000,
-            stream=False
+            model=MODEL_NAME
         )
         return response.choices[0].message.content.strip()
     
     except Exception as e:
-        print(f"DeepSeek调用失败: {e}")
+        print(f"GitHub调用失败: {e}")
         return None
 
 def main():
     print(f"[System] AI 模块启动 (Model: {MODEL_NAME})...")
-    
-    if not os.path.exists(INPUT_FILE):
-        print(f"找不到输入文件: {INPUT_FILE}")
-        return
-
     with open(INPUT_FILE, "r", encoding="utf-8") as f:
         data = json.load(f)
     processed_count = 0
@@ -104,7 +103,7 @@ def main():
                     print("->[研究生通知]")
                     item["summary"] = "<graduate>" 
                     graduate_count += 1
-                    print(summary) 
+                    print(summary)
                 else:
                     print(" -> [完成]")
                     item["summary"] = summary
@@ -114,7 +113,7 @@ def main():
                 item["summary"] = "AI 暂时无法响应"
 
             processed_count += 1
-            time.sleep(1) 
+            time.sleep(4) 
 
     print(f"全部完成！共处理 {processed_count} 条 (研究生通知 {graduate_count} 条)")
     
