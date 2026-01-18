@@ -34,7 +34,7 @@ jobs:
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
-          SJTU_new: ${{ secrets.SJTU_NEW }}
+          SJTU_news: ${{ secrets.SJTU_NEWS }}
           
           EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
           
