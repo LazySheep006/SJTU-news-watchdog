@@ -4,6 +4,7 @@ from email.mime.text import MIMEText
 from email.header import Header
 from email.utils import formataddr
 import os
+import re
 from supabase import create_client, Client
 
 SMTP_SERVER = "smtp.163.com"  # 如果是163，填 smtp.163.com
@@ -21,21 +22,22 @@ def send_daily_report(receiver_email, user_name, user_subs, json_data):
     :param receiver_email: 收件人邮箱
     :param user_name: 用户姓名
     :param user_subs: 用户订阅列表, 如 ["计算机学院", "学生事务"]
-    :param json_data: 完整的 notices.json 字典对象
+    :param json_data: 这里的 json_data 是一个列表 [item1, item2, ...]
     """
     
-    # 数据过滤与展平逻辑
-    # 我们遍历 JSON 中每个学院的列表，筛选出符合订阅要求的项
     personal_notices = []
-    for department, items in json_data.items():
-        for item in items:
-            if item["summary"] == "<graduate>":
-                continue
-            # 匹配逻辑：如果学院名在订阅里
-            if department in user_subs:
-                # 补充来源字段方便 HTML 显示
-                item['source_dept'] = department
-                personal_notices.append(item)
+    
+    # json_data 是列表，直接遍历其中的每一个 item
+    for item in json_data:
+        # 1. 过滤掉无需发送的内容
+        if item.get("summary") == "<graduate>":
+            continue
+            
+        source = item.get('source', '其他')
+        
+        if source in user_subs:
+            item['source_dept'] = source
+            personal_notices.append(item)
 
     if not personal_notices:
         return False
@@ -60,7 +62,11 @@ def send_daily_report(receiver_email, user_name, user_subs, json_data):
             attach_links = [f"<a href='{a['url']}'>{a['name']}</a>" for a in attachments]
             attach_html += " | ".join(attach_links) + "</span>"
 
-        # 核心行
+        raw_summary = item.get('summary', '')
+        
+        formatted_summary = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', raw_summary)
+        
+        formatted_summary = formatted_summary.replace('\n', '<br>')
         row = f"""
             <tr style="border-bottom: 1px solid #eee;">
                 <td style="padding: 15px 0;">
@@ -69,7 +75,7 @@ def send_daily_report(receiver_email, user_name, user_subs, json_data):
                         <a href="{item.get('url')}" style="color: #d32f2f; text-decoration: none;">{item.get('title')}</a>
                     </div>
                     <div style="color: #555; font-size: 0.95em; background: #fdfdfd; padding: 8px; border-left: 3px solid #004052;">
-                        🤖 <b>AI 摘要：</b>{item.get('summary')}
+                        🤖 <b>AI 摘要：</b>{formatted_summary}
                     </div>
                     {attach_html}
                 </td>
