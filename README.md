@@ -27,6 +27,7 @@
 
 ### 1. 环境准备
 确保你安装了 Python 3.10+。
+先fork到你的GitHub仓库
 
 ```bash
 git clone [https://github.com/your-username/sjtu-news-watchdog.git](https://github.com/your-username/sjtu-news-watchdog.git)
