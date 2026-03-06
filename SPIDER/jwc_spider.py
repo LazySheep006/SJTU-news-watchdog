@@ -6,13 +6,17 @@ from urllib.parse import urljoin
 
 FILE_EXTENSIONS = [".pdf", ".doc", ".docx", ".ppt",".pptx",".xls",".xlsx",".zip",".rar",".7z",".tar",".gz",".bz2",".txt",".md"]
 
-LIST_URL = "https://jwc.sjtu.edu.cn/xwtg/jxyx.htm"
+# LIST_URL = "https://jwc.sjtu.edu.cn/xwtg/jxyx.htm"
+# LIST_URL = "https://jwc.sjtu.edu.cn/index/mxxsdtz.htm"
+urls = {
+    "https://jwc.sjtu.edu.cn/xwtg/jxyx.htm","https://jwc.sjtu.edu.cn/index/mxxsdtz.htm"
+}
 
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
 }
 
-def parse_jwc_list(html_content):
+def parse_jwc_list(html_content,LIST_URL):
     soup = BeautifulSoup(html_content, 'html.parser')
     items_data = []
     news_items = soup.select("div.Newslist li") 
@@ -98,26 +102,27 @@ def fetch_jwc_detail(info):
 
 def fetch_jwc_data():
     all_data = []
-    print(f"[教务处] 正在访问: {LIST_URL}")
-    
-    try:
-        res = requests.get(LIST_URL, headers=HEADERS, timeout=60)
-        res.encoding = 'utf-8' # 防止列表页乱码
-        
-        if res.status_code != 200:
-            print(f"列表页请求失败: {res.status_code}")
-            return []
-            
-        items = parse_jwc_list(res.text)
+    for url in urls:
+        print(f"[教务处] 正在访问: {url}")
 
-        for item in items[:3]:
-            detail = fetch_jwc_detail(item)
-            if detail:
-                all_data.append(detail)
-            time.sleep(0.5)
+        try:
+            res = requests.get(url, headers=HEADERS, timeout=60)
+            res.encoding = 'utf-8' # 防止列表页乱码
+        
+            if res.status_code != 200:
+                print(f"列表页请求失败: {res.status_code}")
+                return []
             
-    except Exception as e:
-        print(f"教务处爬虫异常: {e}")      
+            items = parse_jwc_list(res.text,url)
+
+            for item in items[:3]:
+                detail = fetch_jwc_detail(item)
+                if detail:
+                    all_data.append(detail)
+                time.sleep(0.5)
+            
+        except Exception as e:
+            print(f"教务处爬虫异常: {e}")      
     return all_data
 
 if __name__== "__main__":
